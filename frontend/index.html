@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User CRUD</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
+    header { background: #4f46e5; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.2rem; }
+    #logoutBtn { display: none; background: white; color: #4f46e5; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .container { max-width: 900px; margin: 30px auto; padding: 0 16px; }
+    .card { background: white; border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .card h2 { margin-bottom: 16px; font-size: 1rem; color: #4f46e5; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab { padding: 8px 20px; border: 2px solid #4f46e5; border-radius: 6px; cursor: pointer; background: white; color: #4f46e5; font-weight: bold; }
+    .tab.active { background: #4f46e5; color: white; }
+    .form-group { margin-bottom: 12px; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+    button[type="submit"] { width: 100%; padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 4px; }
+    button[type="submit"]:hover { background: #4338ca; }
+    .msg { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 0.9rem; display: none; }
+    .msg.success { background: #d1fae5; color: #065f46; display: block; }
+    .msg.error { background: #fee2e2; color: #991b1b; display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: #f8f8f8; padding: 10px; text-align: left; border-bottom: 2px solid #eee; }
+    td { padding: 10px; border-bottom: 1px solid #eee; }
+    .btn-edit { background: #f59e0b; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
+    .btn-delete { background: #ef4444; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; margin-left: 6px; }
+    #usersSection { display: none; }
+    #authSection { display: block; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; padding: 24px; border-radius: 10px; width: 360px; }
+    .modal h3 { margin-bottom: 16px; color: #4f46e5; }
+    .modal-btns { display: flex; gap: 8px; margin-top: 12px; }
+    .modal-btns button { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    #modalSave { background: #4f46e5; color: white; }
+    #modalCancel { background: #e5e7eb; color: #333; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>User Management</h1>
+  <button id="logoutBtn" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+  <!-- AUTH SECTION -->
+  <div id="authSection" class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Login</button>
+      <button class="tab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <h2>Login</h2>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group"><input type="email" id="loginEmail" placeholder="Email" required /></div>
+        <div class="form-group"><input type="password" id="loginPassword" placeholder="Password" required /></div>
+        <button type="submit">Login</button>
+      </form>
+      <div id="loginMsg" class="msg"></div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" style="display:none">
+      <h2>Register</h2>
+      <form onsubmit="handleRegister(event)">
+        <div class="form-group"><input type="text" id="regName" placeholder="Name" required /></div>
+        <div class="form-group"><input type="email" id="regEmail" placeholder="Email" required /></div>
+        <div class="form-group"><input type="password" id="regPassword" placeholder="Password" required /></div>
+        <div class="form-group">
+          <select id="regRole">
+            <option value="student">Student</option>
+            <option value="trainer">Trainer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button type="submit">Register</button>
+      </form>
+      <div id="registerMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- USERS TABLE SECTION -->
+  <div id="usersSection" class="card">
+    <h2>All Users</h2>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="usersTableBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>Edit User</h3>
+    <input type="hidden" id="editId" />
+    <div class="form-group"><input type="text" id="editName" placeholder="Name" /></div>
+    <div class="form-group"><input type="email" id="editEmail" placeholder="Email" /></div>
+    <div class="form-group">
+      <select id="editRole">
+        <option value="student">Student</option>
+        <option value="trainer">Trainer</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button id="modalSave" onclick="saveEdit()">Save</button>
+      <button id="modalCancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:5000/api/auth';
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = `msg ${type}`;
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const body = {
+      name: document.getElementById('regName').value,
+      email: document.getElementById('regEmail').value,
+      password: document.getElementById('regPassword').value,
+      role: document.getElementById('regRole').value
+    };
+    try {
+      const res = await fetch(`${API}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (res.ok) { showMsg('registerMsg', 'Registered successfully! Please login.', 'success'); e.target.reset(); }
+      else showMsg('registerMsg', data.error || data.message, 'error');
+    } catch { showMsg('registerMsg', 'Server error. Is backend running?', 'error'); }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const body = { email: document.getElementById('loginEmail').value, password: document.getElementById('loginPassword').value };
+    try {
+      const res = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        showMsg('loginMsg', 'Login successful!', 'success');
+        document.getElementById('authSection').style.display = 'none';
+        document.getElementById('usersSection').style.display = 'block';
+        document.getElementById('logoutBtn').style.display = 'block';
+        loadUsers();
+      } else showMsg('loginMsg', data.message || 'Login failed', 'error');
+    } catch { showMsg('loginMsg', 'Server error. Is backend running?', 'error'); }
+  }
+
+  async function loadUsers() {
+    const res = await fetch(`${API}/users`);
+    const users = await res.json();
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>${u.name}</td>
+        <td>${u.email}</td>
+        <td>${u.role}</td>
+        <td>
+          <button class="btn-edit" onclick="openEdit('${u._id}','${u.name}','${u.email}','${u.role}')">Edit</button>
+          <button class="btn-delete" onclick="deleteUser('${u._id}')">Delete</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function openEdit(id, name, email, role) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+
+  async function saveEdit() {
+    const id = document.getElementById('editId').value;
+    const body = { name: document.getElementById('editName').value, email: document.getElementById('editEmail').value, role: document.getElementById('editRole').value };
+    const res = await fetch(`${API}/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) { closeModal(); loadUsers(); }
+  }
+
+  async function deleteUser(id) {
+    if (!confirm('Delete this user?')) return;
+    const res = await fetch(`${API}/users/${id}`, { method: 'DELETE' });
+    if (res.ok) loadUsers();
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    document.getElementById('authSection').style.display = 'block';
+    document.getElementById('usersSection').style.display = 'none';
+    document.getElementById('logoutBtn').style.display = 'none';
+  }
+</script>
+</body>
+</html>
