@@ -12,6 +12,17 @@ A full-stack web application for managing users with Create, Read, Update, and D
 - **Role-based System** - Support for Student, Trainer, and Admin roles
 - **Responsive Design** - Modern UI with orange and white color scheme
 - **Real-time Updates** - Instant UI updates after CRUD operations
+- ## 🚀 Features
+
+- **User Registration** - Create new user accounts with name, email, password, and role
+- **User Authentication** - Secure login system with JWT tokens
+- **User Management** - View all users in a responsive table
+- **Edit Users** - Update user information (name, email, role) with modal interface
+- **Delete Users** - Remove users with confirmation dialog
+- **Role-based System** - Support for Student, Trainer, and Admin roles
+- **Responsive Design** - Modern UI with orange and white color scheme
+- **Real-time Updates** - Instant UI updates after CRUD operations
+
 
 ## 🛠️ Tech Stack
 
